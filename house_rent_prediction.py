@@ -1,36 +1,49 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
 
 # Load dataset
 df = pd.read_csv("dataset.csv")
 
-# Features and target
-X = df[['Area', 'Bedrooms', 'Bathrooms']]
-y = df['Rent']
+X = df[["Location", "Area", "Bedrooms", "Bathrooms"]]
+y = df["Rent"]
 
-# Split dataset
+# Convert Location text into machine-readable values
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("cat", OneHotEncoder(handle_unknown="ignore"), ["Location"])
+    ],
+    remainder="passthrough"
+)
+
+model = Pipeline([
+    ("preprocessor", preprocessor),
+    ("regressor", LinearRegression())
+])
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# Train model
-model = LinearRegression()
 model.fit(X_train, y_train)
 
-# Prediction
-y_pred = model.predict(X_test)
+print("House Rent Prediction System")
 
-# Accuracy
-print("Mean Absolute Error:", mean_absolute_error(y_test, y_pred))
+location = input("Enter Location: ")
+area = float(input("Enter Area (sq ft): "))
+bedrooms = int(input("Enter Bedrooms: "))
+bathrooms = int(input("Enter Bathrooms: "))
 
-# User Input
-print("\nEnter House Details")
-area = float(input("Area (sq ft): "))
-bedrooms = int(input("Bedrooms: "))
-bathrooms = int(input("Bathrooms: "))
+new_house = pd.DataFrame({
+    "Location": [location],
+    "Area": [area],
+    "Bedrooms": [bedrooms],
+    "Bathrooms": [bathrooms]
+})
 
-prediction = model.predict([[area, bedrooms, bathrooms]])
+predicted_rent = model.predict(new_house)
 
-print(f"\nPredicted Rent: ₹{prediction[0]:.2f}")
+print(f"\nPredicted Rent: ₹{predicted_rent[0]:.2f}")
